@@ -1,0 +1,9 @@
+$DaysInactive = 90
+$Cutoff = (Get-Date).AddDays(-$DaysInactive)
+
+Get-ADUser -Filter {Enabled -eq $true} -Properties LastLogonDate,DisplayName,EmailAddress,WhenCreated |
+  Where-Object { -not $_.LastLogonDate -or ($_.LastLogonDate -lt $Cutoff) } |
+  Select-Object SamAccountName, DisplayName, Enabled, LastLogonDate, WhenCreated, EmailAddress |
+  Export-Csv -Path "C:\users\itnow.ehc\desktop\Inactive Users\InactiveUsers_Quick_$($DaysInactive)days.csv" -NoTypeInformation -Encoding UTF8
+
+Write-Host "Exported inactive users to C:\temp\InactiveUsers_Quick_$($DaysInactive)days.csv"
