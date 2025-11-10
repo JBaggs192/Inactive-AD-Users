@@ -1,9 +1,20 @@
+#Defining variables
 $DaysInactive = 90
 $Cutoff = (Get-Date).AddDays(-$DaysInactive)
+$CsvDir  = "C:\Temp\Inactive Users"
+$CsvPath = Join-Path $CsvDir "InactiveUsers_Quick_${DaysInactive}days.csv"
 
-Get-ADUser -Filter {Enabled -eq $true} -Properties LastLogonDate,DisplayName,EmailAddress,WhenCreated |
+# Make sure the export folder exists, create it if it doesn't
+if (-not (Test-Path $CsvDir)) { New-Item -Path $CsvDir -ItemType Directory | Out-Null }
+
+# Build the list first, then export
+$InactiveUsers = Get-ADUser -Filter 'Enabled -eq $true' `
+  -Properties LastLogonDate,DisplayName,EmailAddress,WhenCreated |
   Where-Object { -not $_.LastLogonDate -or ($_.LastLogonDate -lt $Cutoff) } |
-  Select-Object SamAccountName, DisplayName, Enabled, LastLogonDate, WhenCreated, EmailAddress |
-  Export-Csv -Path "C:\users\itnow.ehc\desktop\Inactive Users\InactiveUsers_Quick_$($DaysInactive)days.csv" -NoTypeInformation -Encoding UTF8
+  Select-Object SamAccountName, DisplayName, Enabled, LastLogonDate, WhenCreated, EmailAddress
 
-Write-Host "Exported inactive users to C:\temp\InactiveUsers_Quick_$($DaysInactive)days.csv"
+# Export and report
+$InactiveUsers | Export-Csv -Path $CsvPath -NoTypeInformation -Encoding UTF8
+
+Write-Host "Total number of inactive users: $($InactiveUsers.Count)"
+Write-Host "Exported inactive users to $CsvPath"
